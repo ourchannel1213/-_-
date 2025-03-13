@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        #scanner-container { width: 100%; max-width: 400px; height: 300px; margin: auto; position: relative; border: 2px solid #000; }
+        #scanner-container { width: 100%; max-width: 300px; height: 200px; margin: auto; position: relative; border: 2px solid #000; }
         #result { margin-top: 20px; font-size: 1.5em; }
     </style>
 </head>
@@ -41,9 +41,15 @@
                 inputStream: {
                     type: "LiveStream",
                     constraints: {
-                        facingMode: "environment"
+                        facingMode: "environment",
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
                     },
                     target: document.querySelector("#scanner-container")
+                },
+                locator: {
+                    halfSample: true,
+                    patchSize: "medium" // 초점 조정
                 },
                 decoder: {
                     readers: ["ean_reader", "code_128_reader"]
