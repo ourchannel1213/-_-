@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>바코드 가격 확인기</title>
+    <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
+        #scanner-container { width: 100%; max-width: 400px; height: 300px; margin: auto; position: relative; border: 2px solid #000; }
+        #result { margin-top: 20px; font-size: 1.5em; }
+    </style>
+</head>
+<body>
+    <h1>바코드 가격 확인기</h1>
+    <button onclick="requestCameraPermission()">카메라 권한 요청</button>
+    <div id="scanner-container"></div>
+    <p id="result">바코드를 스캔하세요.</p>
+    
+    <script>
+        const priceData = {
+            "0001": "1000원",
+            "0002": "2000원",
+            "0003": "3000원"
+        };
+
+        async function requestCameraPermission() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                stream.getTracks().forEach(track => track.stop()); // 권한 확인 후 스트림 종료
+                startScanner();
+            } catch (err) {
+                console.error("카메라 권한 요청 실패: ", err);
+                alert("카메라 권한을 허용해주세요.");
+                document.getElementById("result").textContent = "카메라 권한이 필요합니다.";
+            }
+        }
+
+        function startScanner() {
+            Quagga.init({
+                inputStream: {
+                    type: "LiveStream",
+                    constraints: {
+                        facingMode: "environment"
+                    },
+                    target: document.querySelector("#scanner-container")
+                },
+                decoder: {
+                    readers: ["ean_reader", "code_128_reader"]
+                }
+            }, function(err) {
+                if (err) {
+                    console.error("Quagga 초기화 오류: ", err);
+                    return;
+                }
+                Quagga.start();
+            });
+
+            Quagga.onDetected(function(result) {
+                let code = result.codeResult.code;
+                let price = priceData[code] || "가격 정보 없음";
+                document.getElementById("result").textContent = `${code} : ${price}`;
+            });
+        }
+    </script>
+</body>
+</html>
