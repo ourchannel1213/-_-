@@ -7,20 +7,33 @@
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        #scanner-container { width: 100%; max-width: 300px; height: 200px; margin: auto; position: relative; border: 2px solid #000; }
+        #scanner-container {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            margin: auto;
+            position: relative;
+            border: 2px solid #000;
+            overflow: hidden; /* 카메라 크기가 벗어나지 않도록 제한 */
+        }
+        video {
+            width: 100%; /* 카메라 화면이 박스를 넘지 않도록 조정 */
+            height: 100%;
+            object-fit: cover; /* 박스에 꽉 차도록 설정 */
+        }
         #result { margin-top: 20px; font-size: 1.5em; }
         #version { margin-top: 10px; font-size: 1em; color: gray; }
     </style>
 </head>
 <body>
     <h1>바코드 가격 확인기</h1>
-    <p id="version">버전: v1.0</p>  <!-- 버전 표시 -->
+    <p id="version">버전: v1.1</p>  <!-- 버전 표시 -->
     <button onclick="requestCameraPermission()">카메라 권한 요청</button>
     <div id="scanner-container"></div>
     <p id="result">바코드를 스캔하세요.</p>
     
     <script>
-        let version = 1.0; // 초기 버전
+        let version = 1.0;
         const priceData = {
             "036000291452": "5000원"
         };
@@ -45,18 +58,24 @@
                     type: "LiveStream",
                     constraints: {
                         facingMode: "environment",
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
+                        width: { ideal: 300 },
+                        height: { ideal: 200 }
+                    },
+                    area: { // 카메라가 네모 박스를 벗어나지 않도록 설정
+                        top: "0%",    // 상단 위치
+                        right: "0%",  // 우측 위치
+                        left: "0%",   // 좌측 위치
+                        bottom: "0%"  // 하단 위치
                     },
                     target: document.querySelector("#scanner-container")
                 },
                 locate: true,
                 locator: {
-                    halfSample: false,
-                    patchSize: "large"
+                    halfSample: false, // 해상도 손실 방지
+                    patchSize: "large" // 바코드 초점 개선
                 },
                 decoder: {
-                    readers: ["ean_reader", "ean_13_reader", "code_128_reader"]
+                    readers: ["ean_13_reader", "code_128_reader"]
                 },
                 multiple: false
             }, function(err) {
