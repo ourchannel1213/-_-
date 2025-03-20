@@ -7,17 +7,29 @@
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        #scanner-container { width: 300px; height: 300px; margin: auto; position: relative; border: 2px solid #000; }
+        #scanner-container { 
+            width: 300px; 
+            height: 300px; 
+            margin: auto; 
+            position: relative; 
+            border: 2px solid #000;
+            overflow: hidden; /* 네모 박스 밖으로 안 나가게 */
+        }
+        video { 
+            width: 100%; 
+            height: 100%;
+            object-fit: cover; /* 네모 박스 안에서만 꽉 차게 */
+        }
         #result { margin-top: 20px; font-size: 1.5em; }
     </style>
 </head>
 <body>
     <h1>바코드 가격 확인기</h1>
-    <p>버전: <span id="version">v2.0.2</span></p>
+    <p>버전: v2.0.3</p>
     <button onclick="requestCameraPermission()">카메라 권한 요청</button>
     <div id="scanner-container"></div>
     <p id="result">바코드를 스캔하세요.</p>
-
+    
     <script>
         const priceData = {
             "0001": "1000원",
@@ -43,20 +55,23 @@
                     type: "LiveStream",
                     constraints: {
                         facingMode: "environment",
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 300 },
+                        height: { ideal: 300 }
+                    },
+                    area: { // 🔥 인식 범위를 네모 박스 내부로 제한
+                        top: "0%",    // 박스 위에서 0%
+                        right: "0%",  // 박스 오른쪽에서 0%
+                        left: "0%",   // 박스 왼쪽에서 0%
+                        bottom: "0%"  // 박스 아래에서 0%
                     },
                     target: document.querySelector("#scanner-container")
                 },
                 locator: {
-                    halfSample: false,
-                    patchSize: "large" 
+                    halfSample: true,
+                    patchSize: "medium"
                 },
                 decoder: {
-                    readers: [
-                        "ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader",
-                        "code_93_reader", "upc_reader", "upc_e_reader", "i2of5_reader"
-                    ]
+                    readers: ["ean_reader", "code_128_reader"]
                 }
             }, function(err) {
                 if (err) {
@@ -70,8 +85,8 @@
                 let code = result.codeResult.code;
                 let price = priceData[code] || "가격 정보 없음";
                 document.getElementById("result").textContent = `${code} : ${price}`;
-                
-                // 진동 추가 (바코드 인식 시)
+
+                // 🔥 바코드 인식되면 3초간 진동
                 if (navigator.vibrate) {
                     navigator.vibrate(3000);
                 }
