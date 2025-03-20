@@ -9,17 +9,12 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         #scanner-container {
             width: 100%;
-            max-width: 350px;  /* 정사각형으로 크게 조정 */
+            max-width: 350px;
             height: 350px;
             margin: auto;
             position: relative;
             border: 2px solid #000;
             overflow: hidden;
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
         }
         #result { margin-top: 20px; font-size: 1.5em; }
         #version { margin-top: 10px; font-size: 1em; color: gray; }
@@ -34,16 +29,16 @@
     
     <script>
         let version = 1.5;
+        let scanning = false;
+        let vibrationLoop = null;
         const priceData = {
             "036000291452": "5000원"
         };
 
-        let lastScannedCode = "";
-
         async function requestCameraPermission() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "environment", zoom: 2 } // 카메라 확대 적용
+                    video: { facingMode: "environment", zoom: 2 } 
                 });
                 stream.getTracks().forEach(track => track.stop());
                 startScanner();
@@ -70,12 +65,6 @@
                     halfSample: false,
                     patchSize: "large"
                 },
-                area: { 
-                    top: "25%",    
-                    right: "25%",  
-                    left: "25%",   
-                    bottom: "25%"  
-                },
                 decoder: {
                     readers: ["ean_13_reader", "code_128_reader"]
                 },
@@ -86,33 +75,44 @@
                     return;
                 }
                 Quagga.start();
-                adjustFocus(); // 초점 자동 조정 시작
+                scanning = true;
+                startVibrationLoop();
             });
 
             Quagga.onDetected(function(result) {
                 let code = result.codeResult.code;
-                if (code !== lastScannedCode) {
-                    lastScannedCode = code;
-                    let price = priceData[code] || "가격 정보 없음";
+                let price = priceData[code] || "가격 정보 없음";
 
+                // 바코드 인식 시 3초간 진동 후 종료
+                if (scanning) {
+                    scanning = false;
+                    stopVibrationLoop();
                     if (navigator.vibrate) {
-                        navigator.vibrate(200);
+                        navigator.vibrate(3000);
                     }
-
-                    document.getElementById("result").textContent = `${code} : ${price}`;
-
-                    setTimeout(() => {
-                        lastScannedCode = "";
-                    }, 3000);
                 }
+
+                document.getElementById("result").textContent = `${code} : ${price}`;
             });
         }
 
-        function adjustFocus() {
-            setInterval(() => {
-                Quagga.stop();
-                startScanner();
-            }, 1000); // 1초마다 초점 재조정
+        function startVibrationLoop() {
+            if (navigator.vibrate) {
+                vibrationLoop = setInterval(() => {
+                    navigator.vibrate(500);
+                    setTimeout(() => {
+                        navigator.vibrate(0);
+                    }, 500);
+                }, 1500); // 0.5초 진동 후 1초 쉬고 반복
+            }
+        }
+
+        function stopVibrationLoop() {
+            if (vibrationLoop) {
+                clearInterval(vibrationLoop);
+                vibrationLoop = null;
+            }
+            navigator.vibrate(0);
         }
     </script>
 </body>
