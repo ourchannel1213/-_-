@@ -9,8 +9,8 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         #scanner-container {
             width: 100%;
-            max-width: 300px;
-            height: 200px;
+            max-width: 350px;  /* 정사각형으로 크게 조정 */
+            height: 350px;
             margin: auto;
             position: relative;
             border: 2px solid #000;
@@ -27,13 +27,13 @@
 </head>
 <body>
     <h1>바코드 가격 확인기</h1>
-    <p id="version">버전: v1.2</p>
+    <p id="version">버전: v1.5</p>
     <button onclick="requestCameraPermission()">카메라 권한 요청</button>
     <div id="scanner-container"></div>
     <p id="result">바코드를 스캔하세요.</p>
     
     <script>
-        let version = 1.0;
+        let version = 1.5;
         const priceData = {
             "036000291452": "5000원"
         };
@@ -42,7 +42,9 @@
 
         async function requestCameraPermission() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment", zoom: 2 } // 카메라 확대 적용
+                });
                 stream.getTracks().forEach(track => track.stop());
                 startScanner();
             } catch (err) {
@@ -58,8 +60,8 @@
                     type: "LiveStream",
                     constraints: {
                         facingMode: "environment",
-                        width: { ideal: 300 },
-                        height: { ideal: 200 }
+                        width: { ideal: 350 },
+                        height: { ideal: 350 }
                     },
                     target: document.querySelector("#scanner-container")
                 },
@@ -68,11 +70,11 @@
                     halfSample: false,
                     patchSize: "large"
                 },
-                area: { // 인식 범위를 네모 박스 내부로 제한
-                    top: "30%",    
-                    right: "30%",  
-                    left: "30%",   
-                    bottom: "30%"  
+                area: { 
+                    top: "25%",    
+                    right: "25%",  
+                    left: "25%",   
+                    bottom: "25%"  
                 },
                 decoder: {
                     readers: ["ean_13_reader", "code_128_reader"]
@@ -84,6 +86,7 @@
                     return;
                 }
                 Quagga.start();
+                adjustFocus(); // 초점 자동 조정 시작
             });
 
             Quagga.onDetected(function(result) {
@@ -105,9 +108,11 @@
             });
         }
 
-        function updateVersion() {
-            version += 0.1;
-            document.getElementById("version").textContent = `버전: v${version.toFixed(1)}`;
+        function adjustFocus() {
+            setInterval(() => {
+                Quagga.stop();
+                startScanner();
+            }, 1000); // 1초마다 초점 재조정
         }
     </script>
 </body>
