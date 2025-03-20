@@ -22,17 +22,14 @@
 </head>
 <body>
     <h1>바코드 가격 확인기</h1>
-    <p id="version">버전: v1.7</p>
+    <p id="version">버전: v1.1.1</p>
     <button onclick="requestCameraPermission()">카메라 권한 요청</button>
-    <button onclick="startVibrationLoop()">진동 시작</button> 
     <div id="scanner-container"></div>
     <p id="result">바코드를 스캔하세요.</p>
     
     <script>
-        let scanning = false;
-        let vibrationLoop = null;
         const priceData = {
-            "036000291452": "5000원"
+            "1234567890128": "5000원"  // 바코드 값 등록
         };
 
         async function requestCameraPermission() {
@@ -63,7 +60,7 @@
                 locate: true,
                 locator: {
                     halfSample: false,
-                    patchSize: "large"
+                    patchSize: "large" // 정확도 증가
                 },
                 decoder: {
                     readers: ["ean_13_reader", "code_128_reader"]
@@ -75,40 +72,19 @@
                     return;
                 }
                 Quagga.start();
-                scanning = true;
-                startVibrationLoop();
             });
 
             Quagga.onDetected(function(result) {
                 let code = result.codeResult.code;
                 let price = priceData[code] || "가격 정보 없음";
 
-                if (scanning) {
-                    scanning = false;
-                    stopVibrationLoop();
-                    if (navigator.vibrate) {
-                        navigator.vibrate(3000); // 3초 진동
-                    }
-                }
-
                 document.getElementById("result").textContent = `${code} : ${price}`;
+
+                // 바코드 인식되면 3초간 진동
+                if (navigator.vibrate) {
+                    navigator.vibrate(3000);
+                }
             });
-        }
-
-        function startVibrationLoop() {
-            if (navigator.vibrate) {
-                vibrationLoop = setInterval(() => {
-                    navigator.vibrate(500);
-                }, 1500); // 0.5초 진동 후 1초 쉬고 반복
-            }
-        }
-
-        function stopVibrationLoop() {
-            if (vibrationLoop) {
-                clearInterval(vibrationLoop);
-                vibrationLoop = null;
-            }
-            navigator.vibrate(0);
         }
     </script>
 </body>
