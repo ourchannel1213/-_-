@@ -9,27 +9,28 @@
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
         #scanner-container { width: 100%; max-width: 300px; height: 200px; margin: auto; position: relative; border: 2px solid #000; }
         #result { margin-top: 20px; font-size: 1.5em; }
+        #version { margin-top: 10px; font-size: 1em; color: gray; }
     </style>
 </head>
 <body>
     <h1>바코드 가격 확인기</h1>
+    <p id="version">버전: v1.0</p>  <!-- 버전 표시 -->
     <button onclick="requestCameraPermission()">카메라 권한 요청</button>
     <div id="scanner-container"></div>
     <p id="result">바코드를 스캔하세요.</p>
     
     <script>
+        let version = 1.0; // 초기 버전
         const priceData = {
-            "0001": "1000원",
-            "0002": "2000원",
-            "0003": "3000원"
+            "036000291452": "5000원"
         };
 
-        let lastScannedCode = ""; // 중복 인식 방지용 변수
+        let lastScannedCode = "";
 
         async function requestCameraPermission() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                stream.getTracks().forEach(track => track.stop()); // 권한 확인 후 스트림 종료
+                stream.getTracks().forEach(track => track.stop());
                 startScanner();
             } catch (err) {
                 console.error("카메라 권한 요청 실패: ", err);
@@ -49,13 +50,15 @@
                     },
                     target: document.querySelector("#scanner-container")
                 },
+                locate: true,
                 locator: {
-                    halfSample: true,
-                    patchSize: "medium" // 초점 조정
+                    halfSample: false,
+                    patchSize: "large"
                 },
                 decoder: {
-                    readers: ["ean_reader", "code_128_reader"]
-                }
+                    readers: ["ean_reader", "ean_13_reader", "code_128_reader"]
+                },
+                multiple: false
             }, function(err) {
                 if (err) {
                     console.error("Quagga 초기화 오류: ", err);
@@ -66,23 +69,26 @@
 
             Quagga.onDetected(function(result) {
                 let code = result.codeResult.code;
-                if (code !== lastScannedCode) { // 같은 코드가 연속 감지되지 않도록 설정
+                if (code !== lastScannedCode) {
                     lastScannedCode = code;
                     let price = priceData[code] || "가격 정보 없음";
 
-                    // 바코드 인식 시 진동
                     if (navigator.vibrate) {
-                        navigator.vibrate(200); // 200ms 동안 진동
+                        navigator.vibrate(200);
                     }
 
                     document.getElementById("result").textContent = `${code} : ${price}`;
 
-                    // 3초 후 다시 인식 가능하도록 초기화
                     setTimeout(() => {
                         lastScannedCode = "";
                     }, 3000);
                 }
             });
+        }
+
+        function updateVersion() {
+            version += 0.1;
+            document.getElementById("version").textContent = `버전: v${version.toFixed(1)}`;
         }
     </script>
 </body>
