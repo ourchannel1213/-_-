@@ -7,38 +7,28 @@
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        #scanner-container {
-            width: 100%;
-            max-width: 400px;
-            height: 400px;
-            margin: auto;
-            position: relative;
-            border: 3px solid #000;
-            overflow: hidden;
-        }
+        #scanner-container { width: 300px; height: 300px; margin: auto; position: relative; border: 2px solid #000; }
         #result { margin-top: 20px; font-size: 1.5em; }
-        #version { margin-top: 10px; font-size: 1em; color: gray; }
     </style>
 </head>
 <body>
     <h1>바코드 가격 확인기</h1>
-    <p id="version">버전: v2.0.1</p>
+    <p>버전: <span id="version">v2.0.2</span></p>
     <button onclick="requestCameraPermission()">카메라 권한 요청</button>
     <div id="scanner-container"></div>
     <p id="result">바코드를 스캔하세요.</p>
-    
+
     <script>
         const priceData = {
-            "9788961336079": "18,000원 (책 가격)",
-            "1234567890128": "5,000원"
+            "0001": "1000원",
+            "0002": "2000원",
+            "0003": "3000원"
         };
 
         async function requestCameraPermission() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "environment", zoom: 2 } 
-                });
-                stream.getTracks().forEach(track => track.stop());
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                stream.getTracks().forEach(track => track.stop()); // 권한 확인 후 스트림 종료
                 startScanner();
             } catch (err) {
                 console.error("카메라 권한 요청 실패: ", err);
@@ -53,20 +43,21 @@
                     type: "LiveStream",
                     constraints: {
                         facingMode: "environment",
-                        width: { ideal: 400 },
-                        height: { ideal: 400 }
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
                     },
                     target: document.querySelector("#scanner-container")
                 },
-                locate: true,
                 locator: {
                     halfSample: false,
-                    patchSize: "x-large"
+                    patchSize: "large" 
                 },
                 decoder: {
-                    readers: ["ean_13_reader", "code_128_reader"]
-                },
-                multiple: false
+                    readers: [
+                        "ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader",
+                        "code_93_reader", "upc_reader", "upc_e_reader", "i2of5_reader"
+                    ]
+                }
             }, function(err) {
                 if (err) {
                     console.error("Quagga 초기화 오류: ", err);
@@ -78,10 +69,9 @@
             Quagga.onDetected(function(result) {
                 let code = result.codeResult.code;
                 let price = priceData[code] || "가격 정보 없음";
-
                 document.getElementById("result").textContent = `${code} : ${price}`;
-
-                // 바코드 인식되면 3초간 진동
+                
+                // 진동 추가 (바코드 인식 시)
                 if (navigator.vibrate) {
                     navigator.vibrate(3000);
                 }
