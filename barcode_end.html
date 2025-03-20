@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; text-align: center; padding: 20px; }
-        #scanner-container { width: 100%; max-width: 300px; height: 200px; margin: auto; position: relative; border: 2px solid #000; overflow: hidden; }
+        #scanner-container { width: 100%; max-width: 300px; height: 200px; margin: auto; position: relative; border: 2px solid #000; }
         #result { margin-top: 20px; font-size: 1.5em; }
     </style>
 </head>
@@ -23,6 +23,8 @@
             "0002": "2000원",
             "0003": "3000원"
         };
+
+        let lastScannedCode = ""; // 중복 인식 방지용 변수
 
         async function requestCameraPermission() {
             try {
@@ -42,20 +44,14 @@
                     type: "LiveStream",
                     constraints: {
                         facingMode: "environment",
-                        width: { ideal: 300 },
-                        height: { ideal: 200 }
-                    },
-                    area: { // 스캔 영역 제한
-                        top: "20%",    // 상단 여백
-                        right: "20%",  // 우측 여백
-                        left: "20%",   // 좌측 여백
-                        bottom: "20%"   // 하단 여백
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
                     },
                     target: document.querySelector("#scanner-container")
                 },
                 locator: {
-                    halfSample: false,
-                    patchSize: "small" // 초점 강화
+                    halfSample: true,
+                    patchSize: "medium" // 초점 조정
                 },
                 decoder: {
                     readers: ["ean_reader", "code_128_reader"]
@@ -70,8 +66,22 @@
 
             Quagga.onDetected(function(result) {
                 let code = result.codeResult.code;
-                let price = priceData[code] || "가격 정보 없음";
-                document.getElementById("result").textContent = `${code} : ${price}`;
+                if (code !== lastScannedCode) { // 같은 코드가 연속 감지되지 않도록 설정
+                    lastScannedCode = code;
+                    let price = priceData[code] || "가격 정보 없음";
+
+                    // 바코드 인식 시 진동
+                    if (navigator.vibrate) {
+                        navigator.vibrate(200); // 200ms 동안 진동
+                    }
+
+                    document.getElementById("result").textContent = `${code} : ${price}`;
+
+                    // 3초 후 다시 인식 가능하도록 초기화
+                    setTimeout(() => {
+                        lastScannedCode = "";
+                    }, 3000);
+                }
             });
         }
     </script>
